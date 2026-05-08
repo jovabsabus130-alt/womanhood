@@ -28,8 +28,8 @@ export const createOrder = (formData) =>
     headers: { 'Content-Type': 'multipart/form-data' },
   });
 
-export const searchOrders = (query) =>
-  api.get(`/orders/search?q=${encodeURIComponent(query || '')}`);
+export const searchOrders = (query, page = 1) =>
+  api.get(`/orders/search?q=${encodeURIComponent(query || '')}&page=${page}`);
 
 export const getOrder = (id) => api.get(`/orders/${id}`);
 

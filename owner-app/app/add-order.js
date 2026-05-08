@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { createOrder } from '../src/api';
 import { COLORS, SHADOWS } from '../src/theme';
@@ -44,7 +45,14 @@ export default function AddOrderScreen() {
             quality: 0.8,
           });
           if (!result.canceled) {
-            setImage(result.assets[0]);
+            const asset = result.assets[0];
+            const actions = asset.width > 1000 ? [{ resize: { width: 1000 } }] : [];
+            const manipResult = await manipulateAsync(
+              asset.uri,
+              actions,
+              { compress: 0.7, format: SaveFormat.JPEG }
+            );
+            setImage(manipResult);
           }
         },
       },
@@ -62,7 +70,14 @@ export default function AddOrderScreen() {
             quality: 0.8,
           });
           if (!result.canceled) {
-            setImage(result.assets[0]);
+            const asset = result.assets[0];
+            const actions = asset.width > 1000 ? [{ resize: { width: 1000 } }] : [];
+            const manipResult = await manipulateAsync(
+              asset.uri,
+              actions,
+              { compress: 0.7, format: SaveFormat.JPEG }
+            );
+            setImage(manipResult);
           }
         },
       },

@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { searchOrders } from '../src/api';
+import { getOrdersByDate } from '../src/api';
 import { COLORS, SHADOWS } from '../src/theme';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -81,16 +81,12 @@ export default function CalendarDayScreen() {
     })
   ).current;
 
-  // ── Fetch all orders, filter by local date ───────────────────────────────
+  // ── Fetch orders for specific local date ───────────────────────────────
   const fetchOrders = useCallback(async (dateKey) => {
     setLoading(true);
     try {
-      const res = await searchOrders('');
-      const all = res.data.orders || [];
-      const filtered = all.filter(
-        (o) => o.status !== 'collected' && toLocalKey(o.deliveryDueDate) === dateKey
-      );
-      setOrders(filtered);
+      const res = await getOrdersByDate(dateKey);
+      setOrders(res.data.orders || []);
     } catch (err) {
       if (err.response?.status === 401) {
         await AsyncStorage.removeItem('token');

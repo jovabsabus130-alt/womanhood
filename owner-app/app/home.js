@@ -8,6 +8,7 @@ import {
   Image,
   StyleSheet,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -29,11 +30,22 @@ export default function HomeScreen() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const fetchOrders = async (searchQuery = '') => {
+  const fetchOrders = async (searchQuery = '', pageNum = 1, isLoadMore = false) => {
+    if (isLoadMore) setLoadingMore(true);
     try {
-      const res = await searchOrders(searchQuery);
-      setOrders(res.data.orders || []);
+      const res = await searchOrders(searchQuery, pageNum);
+      const newOrders = res.data.orders || [];
+      if (isLoadMore) {
+        setOrders(prev => [...prev, ...newOrders]);
+      } else {
+        setOrders(newOrders);
+      }
+      setHasMore(res.data.hasMore);
+      setPage(pageNum);
     } catch (err) {
       if (err.response?.status === 401) {
         await AsyncStorage.removeItem('token');
@@ -41,26 +53,35 @@ export default function HomeScreen() {
       }
     } finally {
       setLoading(false);
+      setLoadingMore(false);
       setRefreshing(false);
     }
   };
 
   useEffect(() => {
-    fetchOrders();
+    fetchOrders('', 1);
   }, []);
 
   // Debounced search
   useEffect(() => {
+    // Skip first render since it's handled by mount effect
+    if (loading && page === 1 && !query) return;
     const timer = setTimeout(() => {
-      fetchOrders(query);
+      fetchOrders(query, 1);
     }, 400);
     return () => clearTimeout(timer);
   }, [query]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchOrders(query);
+    fetchOrders(query, 1);
   }, [query]);
+
+  const handleLoadMore = () => {
+    if (!loadingMore && hasMore && !loading) {
+      fetchOrders(query, page + 1, true);
+    }
+  };
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
@@ -162,6 +183,9 @@ export default function HomeScreen() {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={renderEmpty}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={loadingMore ? <ActivityIndicator size="small" color={COLORS.primary} style={{ marginVertical: 20 }} /> : null}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

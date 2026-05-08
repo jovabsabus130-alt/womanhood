@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { searchOrders } from '../src/api';
+import { getMonthOrders } from '../src/api';
 import { COLORS, SHADOWS } from '../src/theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -64,27 +64,12 @@ export default function CalendarMonthScreen() {
   const [monthOrders, setMonthOrders] = useState({});
   const [loading, setLoading] = useState(true);
 
-  // Fetch ALL non-collected orders, group by local date for current month
+  // Fetch ALL non-collected orders grouped by local date for current month
   const fetchMonthOrders = useCallback(async (year, month) => {
     setLoading(true);
     try {
-      const res = await searchOrders('');
-      const all = res.data.orders || [];
-      const grouped = {};
-      for (const order of all) {
-        if (order.status === 'collected') continue;
-        const d = new Date(order.deliveryDueDate);
-        if (d.getFullYear() !== year || d.getMonth() + 1 !== month) continue;
-        const key = toLocalKey(d);
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push({
-          _id: order._id,
-          customerName: order.customerName,
-          serialNumber: order.serialNumber,
-          status: order.status,
-        });
-      }
-      setMonthOrders(grouped);
+      const res = await getMonthOrders(year, month);
+      setMonthOrders(res.data.orders || {});
     } catch (err) {
       if (err.response?.status === 401) {
         await AsyncStorage.removeItem('token');
