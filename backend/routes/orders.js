@@ -116,6 +116,78 @@ router.get('/search', async (req, res) => {
   }
 });
 
+// GET /api/orders/by-date?date=YYYY-MM-DD — Orders due on a specific date (pending only)
+// Queries a broad ±1 day UTC range then filters by local date string to handle any timezone
+router.get('/by-date', async (req, res) => {
+  try {
+    const { date } = req.query;
+    if (!date) {
+      return res.status(400).json({ success: false, message: 'date query param required' });
+    }
+    // Broad UTC range: cover the full calendar day in any timezone (max ±14h offset)
+    const [y, mo, d] = date.split('-').map(Number);
+    const start = new Date(Date.UTC(y, mo - 1, d - 1, 10, 0, 0, 0)); // prev day 10:00 UTC
+    const end   = new Date(Date.UTC(y, mo - 1, d + 1, 14, 0, 0, 0)); // next day 14:00 UTC
+
+    const allOrders = await Order.find({
+      deliveryDueDate: { $gte: start, $lte: end },
+      status: { $ne: 'collected' },
+    }).sort({ createdAt: -1 });
+
+    // Filter to only orders whose LOCAL date string matches requested date
+    const orders = allOrders.filter(order => {
+      const local = new Date(order.deliveryDueDate);
+      const localKey = `${local.getFullYear()}-${String(local.getMonth() + 1).padStart(2, '0')}-${String(local.getDate()).padStart(2, '0')}`;
+      return localKey === date;
+    });
+
+    res.json({ success: true, orders });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch orders by date' });
+  }
+});
+
+// GET /api/orders/month-orders?year=YYYY&month=MM — Full pending orders grouped by local date
+router.get('/month-orders', async (req, res) => {
+  try {
+    const { year, month } = req.query;
+    if (!year || !month) {
+      return res.status(400).json({ success: false, message: 'year and month required' });
+    }
+    const y = parseInt(year, 10);
+    const m = parseInt(month, 10) - 1;
+    // Broad range to cover all timezones
+    const start = new Date(Date.UTC(y, m, 0, 10, 0, 0, 0));       // last day of prev month 10:00 UTC
+    const end   = new Date(Date.UTC(y, m + 1, 2, 14, 0, 0, 0));   // 2nd day of next month 14:00 UTC
+
+    const allOrders = await Order.find({
+      deliveryDueDate: { $gte: start, $lte: end },
+      status: { $ne: 'collected' },
+    }).select('customerName serialNumber deliveryDueDate status').sort({ deliveryDueDate: 1 });
+
+    // Group by LOCAL date key
+    const grouped = {};
+    for (const order of allOrders) {
+      const local = new Date(order.deliveryDueDate);
+      const localMonth = local.getMonth() + 1;
+      // Only include orders that actually fall in the requested month locally
+      if (local.getFullYear() !== y || localMonth !== parseInt(month, 10)) continue;
+      const key = `${local.getFullYear()}-${String(localMonth).padStart(2, '0')}-${String(local.getDate()).padStart(2, '0')}`;
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push({
+        _id: order._id,
+        customerName: order.customerName,
+        serialNumber: order.serialNumber,
+        status: order.status,
+      });
+    }
+
+    res.json({ success: true, orders: grouped });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch month orders' });
+  }
+});
+
 // GET /api/orders/:id — Single order detail
 router.get('/:id', async (req, res) => {
   try {

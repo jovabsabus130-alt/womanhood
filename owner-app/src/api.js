@@ -45,4 +45,11 @@ export const updateOrderStatus = (id, status) =>
 
 export const deleteOrder = (id) => api.delete(`/orders/${id}`);
 
+// Calendar
+export const getOrdersByDate = (dateStr) =>
+  api.get(`/orders/by-date?date=${encodeURIComponent(dateStr)}`);
+
+export const getMonthOrders = (year, month) =>
+  api.get(`/orders/month-orders?year=${year}&month=${month}`);
+
 export default api;

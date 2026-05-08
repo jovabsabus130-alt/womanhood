@@ -180,6 +180,29 @@ export default function HomeScreen() {
       >
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
+
+      {/* Bottom Navbar */}
+      <View style={styles.navbar}>
+        <TouchableOpacity
+          style={styles.navbarTab}
+          activeOpacity={0.75}
+          accessibilityLabel="Home tab, currently active"
+        >
+          <Text style={styles.navbarIcon}>🏠</Text>
+          <Text style={[styles.navbarLabel, styles.navbarLabelActive]}>Home</Text>
+          <View style={styles.navbarActiveBar} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.navbarTab}
+          onPress={() => router.push('/calendar')}
+          activeOpacity={0.75}
+          accessibilityLabel="Go to Calendar"
+        >
+          <Text style={styles.navbarIcon}>📅</Text>
+          <Text style={styles.navbarLabel}>Calendar</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -226,7 +249,7 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 20,
     paddingTop: 8,
-    paddingBottom: 100,
+    paddingBottom: 160,
   },
   orderCard: {
     backgroundColor: COLORS.white,
@@ -312,7 +335,7 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: 30,
+    bottom: 86,
     right: 24,
     width: 60,
     height: 60,
@@ -327,5 +350,43 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontWeight: '800',
     marginTop: -2,
+  },
+  // Bottom Navbar
+  navbar: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.white,
+    borderTopWidth: 1,
+    borderTopColor: '#f0ebe6',
+    height: 72,
+    ...SHADOWS.card,
+  },
+  navbarTab: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    paddingBottom: 8,
+  },
+  navbarIcon: {
+    fontSize: 22,
+    marginBottom: 2,
+  },
+  navbarLabel: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 11,
+    color: COLORS.textMuted,
+  },
+  navbarLabelActive: {
+    fontFamily: 'Inter_800ExtraBold',
+    color: COLORS.primaryDark,
+  },
+  navbarActiveBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: '20%',
+    right: '20%',
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: COLORS.primary,
   },
 });
