@@ -2,7 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 
-// POST /api/auth/login — Owner login
+// POST /api/auth/login — Owner login (supports multiple owners via OWNERS_JSON)
 router.post('/login', (req, res) => {
   try {
     const { username, phoneNumber } = req.body;
@@ -14,11 +14,31 @@ router.post('/login', (req, res) => {
       });
     }
 
-    // Validate against env credentials
-    if (
-      username !== process.env.OWNER_USERNAME ||
-      phoneNumber !== process.env.OWNER_PHONE
-    ) {
+    // Build owners list: prefer OWNERS_JSON, fallback to legacy single-owner vars
+    let owners = [];
+    if (process.env.OWNERS_JSON) {
+      try {
+        owners = JSON.parse(process.env.OWNERS_JSON);
+      } catch (_) {}
+    }
+    // Always include the legacy single owner if defined
+    if (process.env.OWNER_USERNAME && process.env.OWNER_PHONE) {
+      const alreadyIncluded = owners.some(
+        (o) => o.username === process.env.OWNER_USERNAME
+      );
+      if (!alreadyIncluded) {
+        owners.push({
+          username: process.env.OWNER_USERNAME,
+          phone: process.env.OWNER_PHONE,
+        });
+      }
+    }
+
+    const match = owners.find(
+      (o) => o.username === username && o.phone === phoneNumber
+    );
+
+    if (!match) {
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials.'

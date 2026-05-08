@@ -32,6 +32,8 @@ export default function RootLayout() {
         <Stack.Screen name="home" />
         <Stack.Screen name="add-order" />
         <Stack.Screen name="order/[id]" />
+        <Stack.Screen name="calendar" />
+        <Stack.Screen name="calendar-month" />
       </Stack>
     </>
   );
